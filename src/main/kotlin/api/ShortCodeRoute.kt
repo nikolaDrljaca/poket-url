@@ -12,6 +12,7 @@ import infrastructure.configuration.ErrorCode
 import infrastructure.configuration.Limiters
 import infrastructure.configuration.Problem
 import infrastructure.configuration.respondProblem
+import infrastructure.pool.ShortCodePool
 import io.ktor.http.*
 import io.ktor.server.plugins.ratelimit.rateLimit
 import io.ktor.server.request.*
@@ -24,9 +25,13 @@ import org.slf4j.Logger
 fun Route.shortCodeRoutes(
     logger: Logger,
     repository: PoketUrlRepository,
+    shortCodePool: ShortCodePool,
     environment: Environment
 ) {
-    val createUseCase = CreateShortUrlUseCase(repository)
+    val createUseCase = CreateShortUrlUseCase(
+        repository = repository,
+        shortCodePool = shortCodePool
+    )
     val resolveUseCase = ResolveShortCodeUseCase(repository)
 
     rateLimit(Limiters.CreatePoketUrl) {

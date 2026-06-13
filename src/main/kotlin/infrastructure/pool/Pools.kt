@@ -3,6 +3,7 @@ package infrastructure.pool
 import domain.PoketUrl
 import domain.ShortCode
 import infrastructure.db.PoketUrlTable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.v1.core.inList
@@ -11,24 +12,38 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.slf4j.Logger
+import java.util.concurrent.atomic.AtomicInteger
 
 class ShortCodePool(
-    private val poolSize: Int = 9_000,
+    private val poolSize: Int = 10_000,
     private val logger: Logger
 ) {
-    private val pool = ArrayDeque<ShortCode>()
+    private val poolChannel = Channel<ShortCode>(capacity = poolSize)
+    private val channelSize = AtomicInteger(0)
 
     private val populateMutex = Mutex()
 
-    fun get(): ShortCode {
-        return pool.removeFirst()
+    fun size(): Int = channelSize.get()
+
+    suspend fun get(): ShortCode {
+        val code = poolChannel.receive()
+        channelSize.decrementAndGet()
+        return code
     }
 
     // mutex lock prevets overlapping runs
     suspend fun populate() = populateMutex.withLock {
-        logger.info("ShortCodePool - populating. Current size: ${pool.size}.")
+        val currentPoolSize = channelSize.get()
+        logger.info("ShortCodePool - populating. Current size: $currentPoolSize.")
+        // check if the pool needs more
+        val needed = (poolSize - currentPoolSize).coerceAtLeast(0)
+        if (needed == 0) {
+            return@withLock
+        }
+
         val codes = generateSequence { ShortCode.generate() }
-            .take((poolSize - pool.size).coerceAtLeast(0))
+            .distinct()
+            .take(needed)
             .toList()
         val inDatabase = suspendTransaction {
             PoketUrlTable.select(PoketUrlTable.shortCode)
@@ -37,33 +52,9 @@ class ShortCodePool(
                 .map { it[PoketUrlTable.shortCode] }
         }
         val toStore = codes.filterNot { inDatabase.contains(it.value) }
-        pool.addAll(toStore)
+        toStore.forEach { poolChannel.send(it) }
+        channelSize.addAndGet(toStore.size)
         logger.info("ShortCodePool - added ${toStore.size} codes to pool.")
     }
 }
 
-// maybe you don't need this
-class PoketUrlCreatePool(
-    private val poolCapacity: Int = 1_000,
-    private val logger: Logger
-) {
-    private val pool = ArrayDeque<PoketUrl>()
-    private val mutex = Mutex()
-
-    fun save(poketUrl: PoketUrl) {
-        pool.addFirst(poketUrl)
-    }
-
-    suspend fun flush() = mutex.withLock {
-        // wait for pool to fill
-        if (pool.size < poolCapacity) return@withLock
-        // pool is filled, flush
-        suspendTransaction {
-            PoketUrlTable.batchInsert(pool) {
-                this[PoketUrlTable.shortCode] = it.shortCode.value
-                this[PoketUrlTable.originalUrl] = it.originalUrl.value
-            }
-        }
-        pool.clear()
-    }
-}

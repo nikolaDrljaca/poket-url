@@ -3,6 +3,8 @@ package infrastructure.db
 import domain.ShortCode
 import domain.PoketUrl
 import domain.PoketUrlRepository
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.slf4j.Logger
 
 /*
@@ -34,8 +36,10 @@ class CachedPoketUrlRepository(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PoketUrl>) = size > capacity
     }
 
-    override suspend fun save(mapping: PoketUrl) {
-        delegate.save(mapping)
+    override suspend fun save(mapping: PoketUrl) = coroutineScope {
+        launch {
+            delegate.save(mapping)
+        }
         cache[mapping.shortCode.value] = mapping
     }
 

@@ -8,9 +8,14 @@ import infrastructure.configuration.parseEnvironment
 import infrastructure.db.CachedPoketUrlRepository
 import infrastructure.db.SqlitePoketUrlRepository
 import infrastructure.db.configureDatabase
+import infrastructure.pool.ShortCodePool
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 suspend fun Application.module() {
     // parse environment
@@ -23,6 +28,26 @@ suspend fun Application.module() {
     configureHttp()
     configureDatabase(environment = env)
     configureRateLimiter(environment = env)
+    // initialize pool
+    val shortCodePool = ShortCodePool(logger = log)
+    // interval based pool replenish
+    launch {
+        while (true) {
+            shortCodePool.populate()
+            delay(10.seconds)
+        }
+    }
+    // emergency pool replenish
+    launch {
+        while (true) {
+            if (shortCodePool.size() < 10_000 * 0.2) {
+                log.warn("ShortCodePool - low watermark reached, triggering emergency populate.")
+                shortCodePool.populate() // mutex inside prevents overlap with the regular loop
+            }
+            delay(1.seconds)
+        }
+    }
+
     // create dependencies
     val repo = CachedPoketUrlRepository(
         logger = log,
@@ -33,6 +58,7 @@ suspend fun Application.module() {
         shortCodeRoutes(
             logger = log,
             repository = repo,
+            shortCodePool = shortCodePool,
             environment = env
         )
         actuatorRoutes(logger = log)
