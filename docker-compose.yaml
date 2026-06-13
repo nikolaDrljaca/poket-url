@@ -1,0 +1,33 @@
+# PROD docker compose script
+
+services:
+  poketurl-service:
+    image: poketurl:2026.6
+    build: .
+    container_name: poketurl-service
+    ports:
+      - 5000:5000
+    volumes:
+      # use bind mount
+      - /opt/poketurl/data:/app/data
+    environment:
+      DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
+      BASE_PATH: ${BASE_PATH:-}
+      RATE_LIMIT: ${RATE_LIMIT:-false}
+
+    # hardening
+    security_opt:
+      - "no-new-privileges=true"
+    cap_drop:
+      - ALL
+    # ops
+    #cpus: '0.8'
+    mem_limit: 512m
+    restart: on-failure:5
+
+    # health
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
