@@ -14,7 +14,6 @@ services:
       RATE_LIMIT: ${RATE_LIMIT:-false}
       JAVA_TOOL_OPTIONS: >-
         -XX:MaxRAMPercentage=75.0
-        -XX:+PrintContainerInfo
 
     # hardening
     security_opt:
