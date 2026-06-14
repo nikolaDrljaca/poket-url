@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 class PoolShortCodeProvider(
-    private val poolSize: Int = 10_000,
+    private val poolSize: Int = POOL_SIZE,
     private val logger: Logger,
     private val provider: ShortCodeProvider
 ) : ShortCodeProvider by provider {
@@ -61,6 +61,10 @@ class PoolShortCodeProvider(
             toStore.forEach { pool.send(it) }
             currentPoolSize.addAndGet(toStore.size)
         }
+    }
+
+    companion object {
+        const val POOL_SIZE = 10_000
     }
 }
 
