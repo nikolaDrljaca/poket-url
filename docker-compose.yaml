@@ -12,15 +12,25 @@ services:
       DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
       BASE_PATH: ${BASE_PATH:-}
       RATE_LIMIT: ${RATE_LIMIT:-false}
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=75.0
+        -XX:+PrintContainerInfo
 
     # hardening
     security_opt:
       - "no-new-privileges=true"
     cap_drop:
       - ALL
-    # ops
-    cpus: 1
-    mem_limit: 512m
+
+    # deployment
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512m
+        reservations:
+          cpus: '0.5'
+          memory: 256m
     restart: on-failure:5
 
     # health
