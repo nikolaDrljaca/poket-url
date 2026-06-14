@@ -4,7 +4,7 @@ exposed = "1.2.0"
 kotlin = "2.3.21"
 logback = "1.5.21"
 sqlite = "3.49.1.0"
-flaxoos = "2.3.0"
+cache4k = "0.14.0"
 
 
 [libraries]
@@ -15,7 +15,7 @@ exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "e
 exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-flaxoos-ktor-server-rateLimiting = { module = "io.github.flaxoos:ktor-server-rate-limiting", version.ref = "flaxoos" }
+cache4k-cache = { module = "io.github.reactivecircus.cache4k:cache4k", version.ref = "cache4k"}
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

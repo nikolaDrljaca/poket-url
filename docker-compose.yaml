@@ -5,8 +5,6 @@ services:
     image: poketurl:2026.6
     build: .
     container_name: poketurl-service
-    ports:
-      - 5000:5000
     volumes:
       # use bind mount
       - /opt/poketurl/data:/app/data
@@ -21,7 +19,7 @@ services:
     cap_drop:
       - ALL
     # ops
-    #cpus: '0.8'
+    cpus: 1
     mem_limit: 512m
     restart: on-failure:5
 

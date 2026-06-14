@@ -7,6 +7,7 @@ import domain.OriginalUrl
 import domain.OriginalUrlError
 import domain.ShortCode
 import domain.PoketUrlRepository
+import domain.ShortCodeProvider
 import infrastructure.configuration.Environment
 import infrastructure.configuration.ErrorCode
 import infrastructure.configuration.Limiters
@@ -24,9 +25,13 @@ import org.slf4j.Logger
 fun Route.shortCodeRoutes(
     logger: Logger,
     repository: PoketUrlRepository,
+    shortCodeProvider: ShortCodeProvider,
     environment: Environment
 ) {
-    val createUseCase = CreateShortUrlUseCase(repository)
+    val createUseCase = CreateShortUrlUseCase(
+        repository = repository,
+        shortCodeProvider = shortCodeProvider
+    )
     val resolveUseCase = ResolveShortCodeUseCase(repository)
 
     rateLimit(Limiters.CreatePoketUrl) {

@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.datetime)
     implementation(libs.logback.classic)
+    implementation(libs.cache4k.cache)
 
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)

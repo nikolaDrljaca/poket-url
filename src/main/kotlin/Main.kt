@@ -1,13 +1,13 @@
 import api.actuatorRoutes
 import api.shortCodeRoutes
-import infrastructure.configuration.configureHttp
-import infrastructure.configuration.configureRateLimiter
-import infrastructure.configuration.configureSerialization
-import infrastructure.configuration.configureStatusPages
-import infrastructure.configuration.parseEnvironment
+import domain.DefaultShortCodeProvider
+import infrastructure.cache.LruCache
+import infrastructure.configuration.*
 import infrastructure.db.CachedPoketUrlRepository
 import infrastructure.db.SqlitePoketUrlRepository
 import infrastructure.db.configureDatabase
+import infrastructure.pool.PoolShortCodeProvider
+import infrastructure.pool.launchReplenishLoop
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.routing.*
@@ -23,16 +23,27 @@ suspend fun Application.module() {
     configureHttp()
     configureDatabase(environment = env)
     configureRateLimiter(environment = env)
+
+    // initialize pool
+    val shortCodePool = PoolShortCodeProvider(
+        logger = log,
+        provider = DefaultShortCodeProvider()
+    )
+    shortCodePool.launchReplenishLoop(this)
+
     // create dependencies
     val repo = CachedPoketUrlRepository(
         logger = log,
-        delegate = SqlitePoketUrlRepository()
+        delegate = SqlitePoketUrlRepository(),
+        cache = LruCache()
     )
+
     // configure routing
     routing {
         shortCodeRoutes(
             logger = log,
             repository = repo,
+            shortCodeProvider = shortCodePool,
             environment = env
         )
         actuatorRoutes(logger = log)
