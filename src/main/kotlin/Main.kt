@@ -1,6 +1,7 @@
 import api.actuatorRoutes
 import api.shortCodeRoutes
 import domain.DefaultShortCodeProvider
+import infrastructure.cache.LruCache
 import infrastructure.configuration.*
 import infrastructure.db.CachedPoketUrlRepository
 import infrastructure.db.SqlitePoketUrlRepository
@@ -22,6 +23,7 @@ suspend fun Application.module() {
     configureHttp()
     configureDatabase(environment = env)
     configureRateLimiter(environment = env)
+
     // initialize pool
     val shortCodePool = PoolShortCodeProvider(
         logger = log,
@@ -32,8 +34,10 @@ suspend fun Application.module() {
     // create dependencies
     val repo = CachedPoketUrlRepository(
         logger = log,
-        delegate = SqlitePoketUrlRepository()
+        delegate = SqlitePoketUrlRepository(),
+        cache = LruCache()
     )
+
     // configure routing
     routing {
         shortCodeRoutes(
