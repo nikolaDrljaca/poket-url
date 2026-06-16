@@ -1,11 +1,12 @@
-package infrastructure.db
+package infrastructure.configuration
 
-import infrastructure.configuration.Environment
+import infrastructure.db.PoketUrlTable
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import java.sql.Connection
 
 suspend fun Application.configureDatabase(
     environment: Environment
@@ -26,10 +27,9 @@ suspend fun Application.configureDatabase(
         driver = "org.sqlite.JDBC"
     )
     // set sqlite compatible isolation level
-    TransactionManager.manager.defaultIsolationLevel = java.sql.Connection.TRANSACTION_SERIALIZABLE
+    TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
     // initialize schemas, no migration tools like liquibase
     suspendTransaction(db) {
         SchemaUtils.create(PoketUrlTable)
     }
 }
-

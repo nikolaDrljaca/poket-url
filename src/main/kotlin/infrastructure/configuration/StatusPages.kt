@@ -3,23 +3,50 @@ package infrastructure.configuration
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.request.uri
 import io.ktor.server.response.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 
-@JvmInline
-@Serializable
-value class ErrorCode private constructor(val code: String) {
-    companion object {
-        const val APP_PREFIX = "PKT"
+enum class ErrorCode(val code: String) {
+    Unknown("PKT-001"),
+    CannotCreateShortCode("PKT-002"),
+    EmptyShortCode("PKT-003"),
+    UnsupportedProtocol("PKT-004"),
+    UrlLengthExceeded("PKT-005"),
+}
 
-        val Unknown = ErrorCode("$APP_PREFIX-001")
-        val CannotCreateShortCode = ErrorCode("$APP_PREFIX-002")
-        val EmptyShortCode = ErrorCode("$APP_PREFIX-003")
-        val UnsupportedProtocol = ErrorCode("$APP_PREFIX-004")
-        val UrlLengthExceeded = ErrorCode("$APP_PREFIX-005")
-    }
+fun ErrorCode.asProblem(): Problem = when (this) {
+    ErrorCode.Unknown -> Problem(
+        title = "Unknown exception",
+        statusCode = HttpStatusCode.InternalServerError,
+        code = code
+    )
+
+    ErrorCode.CannotCreateShortCode -> Problem(
+        title = "Cannot create short code. Try again later.",
+        statusCode = HttpStatusCode.InternalServerError,
+        code = code
+    )
+
+    ErrorCode.EmptyShortCode -> Problem(
+        title = "Parameter 'code' is required.",
+        statusCode = HttpStatusCode.BadRequest,
+        code = code
+    )
+
+    ErrorCode.UnsupportedProtocol -> Problem(
+        title = "Protocol not supported.",
+        statusCode = HttpStatusCode.BadRequest,
+        code = code
+    )
+
+    ErrorCode.UrlLengthExceeded -> Problem(
+        title = "URL length exceeded.",
+        statusCode = HttpStatusCode.BadRequest,
+        code = code
+    )
 }
 
 // Content-Type application/problem+json
@@ -32,36 +59,31 @@ data class Problem(
     @Transient
     val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError,
 
-    val code: ErrorCode? = null,
-    val details: String? = null
+    val code: String? = null,
+    val detail: String? = null
 ) {
     val status = statusCode.value
 }
 
 
-suspend fun ApplicationCall.respondProblem(problem: Problem) =
+suspend inline fun ApplicationCall.respondProblem(problem: Problem) =
     respondText(
         status = problem.statusCode,
-        text = Json.encodeToString(problem),
+        text = Json.encodeToString(problem.copy(instance = request.uri)),
         contentType = ContentType.Application.ProblemJson
     )
 
-// RuntimeExceptions should be raise alerts!
-// Move all configurations to the infrastructure.ktor package
+suspend inline fun ApplicationCall.respondErrorCode(err: ErrorCode) = respondProblem(err.asProblem())
+
+
 fun Application.configureStatusPages() {
+    val logger = log
     // all error responses use application/json+problem
     install(StatusPages) {
         exception<Throwable> { call, cause ->
-            val problem = Problem(
-                title = cause.localizedMessage,
-                statusCode = HttpStatusCode.InternalServerError,
-                code = ErrorCode.Unknown
-            )
-            call.respondText(
-                contentType = ContentType.Application.ProblemJson,
-                status = HttpStatusCode.InternalServerError,
-                text = Json.encodeToString(problem)
-            )
+            logger.error("Something went wrong!", cause)
+            val problem = ErrorCode.Unknown.asProblem()
+            call.respondProblem(problem)
         }
     }
 }
