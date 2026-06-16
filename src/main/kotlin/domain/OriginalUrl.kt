@@ -6,6 +6,11 @@ import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import java.net.URI
 
+sealed interface OriginalUrlError {
+    data object ExceedLength : OriginalUrlError
+    data class InvalidScheme(val scheme: String) : OriginalUrlError
+}
+
 @JvmInline
 value class OriginalUrl private constructor(val value: String) {
     companion object {

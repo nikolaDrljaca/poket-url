@@ -1,11 +1,13 @@
 import api.actuatorRoutes
 import api.shortCodeRoutes
+import application.CreateShortUrlUseCase
+import application.ResolveShortCodeUseCase
 import domain.DefaultShortCodeProvider
 import infrastructure.cache.LruCache
 import infrastructure.configuration.*
 import infrastructure.db.CachedPoketUrlRepository
 import infrastructure.db.SqlitePoketUrlRepository
-import infrastructure.db.configureDatabase
+import infrastructure.configuration.configureDatabase
 import infrastructure.pool.PoolShortCodeProvider
 import infrastructure.pool.launchReplenishLoop
 import io.ktor.server.application.*
@@ -39,15 +41,15 @@ suspend fun Application.module() {
     )
 
     // configure routing
-    routing {
-        shortCodeRoutes(
-            logger = log,
+    shortCodeRoutes(
+        createShortCode = CreateShortUrlUseCase(
             repository = repo,
-            shortCodeProvider = shortCodePool,
-            environment = env
-        )
-        actuatorRoutes(logger = log)
-    }
+            shortCodeProvider = shortCodePool
+        ),
+        resolveShortCode = ResolveShortCodeUseCase(repo),
+        environment = env
+    )
+    actuatorRoutes()
 }
 
 fun main(args: Array<String>) {
