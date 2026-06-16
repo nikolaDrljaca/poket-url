@@ -3,26 +3,25 @@ package domain
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
-import java.security.SecureRandom
+
+sealed interface ShortCodeError {
+    data object InvalidLength: ShortCodeError
+
+    data object UnsupportedAlphabet: ShortCodeError
+}
 
 @JvmInline
 value class ShortCode private constructor(val value: String) {
     companion object {
-        private const val ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        const val ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         const val LENGTH = 8
-        private val secureRandom = SecureRandom()
 
-        fun generate(): ShortCode {
-            val generatedCode = buildString {
-                repeat(LENGTH) {
-                    append(ALPHABET[secureRandom.nextInt(ALPHABET.count())])
-                }
+        operator fun invoke(value: String): Either<ShortCodeError, ShortCode> = either {
+            ensure(value.isNotBlank()) { ShortCodeError.InvalidLength }
+            ensure(value.length == LENGTH) { ShortCodeError.InvalidLength }
+            ensure(value.all { ALPHABET.contains(it) }) {
+                ShortCodeError.UnsupportedAlphabet
             }
-            return ShortCode(generatedCode)
-        }
-
-        operator fun invoke(value: String): Either<PoketUrlError.EmptyShortCode, ShortCode> = either {
-            ensure(value.isNotBlank()) { PoketUrlError.EmptyShortCode }
             ShortCode(value)
         }
     }
