@@ -6,24 +6,13 @@ import arrow.core.getOrElse
 import domain.OriginalUrl
 import domain.OriginalUrlError
 import domain.ShortCode
-import domain.PoketUrlRepository
-import domain.ShortCodeProvider
-import infrastructure.configuration.Environment
-import infrastructure.configuration.ErrorCode
-import infrastructure.configuration.Limiters
-import infrastructure.configuration.Problem
-import infrastructure.configuration.respondErrorCode
-import infrastructure.configuration.respondProblem
+import infrastructure.configuration.*
 import io.ktor.http.*
-import io.ktor.server.application.Application
-import io.ktor.server.application.log
-import io.ktor.server.plugins.ratelimit.rateLimit
+import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
-import org.slf4j.Logger
 
 
 fun Application.shortCodeRoutes(
@@ -44,7 +33,7 @@ fun Application.shortCodeRoutes(
             val result = resolveShortCode.execute(shortCode)
                 ?: return@get call.respondProblem(
                     problem = Problem(
-                        title = "Original URL not found for code {${shortCode.value}}.",
+                        title = "Original URL not found for code '${shortCode.value}'.",
                         statusCode = HttpStatusCode.NotFound,
                     )
                 )
