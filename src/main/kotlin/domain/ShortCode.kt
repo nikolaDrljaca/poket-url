@@ -16,10 +16,12 @@ value class ShortCode private constructor(val value: String) {
         const val ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         const val LENGTH = 8
 
+        private val allowedCharacters = ALPHABET.toSet()
+
         operator fun invoke(value: String): Either<ShortCodeError, ShortCode> = either {
             ensure(value.isNotBlank()) { ShortCodeError.InvalidLength }
             ensure(value.length == LENGTH) { ShortCodeError.InvalidLength }
-            ensure(value.all { ALPHABET.contains(it) }) {
+            ensure(value.all { allowedCharacters.contains(it) }) {
                 ShortCodeError.UnsupportedAlphabet
             }
             ShortCode(value)

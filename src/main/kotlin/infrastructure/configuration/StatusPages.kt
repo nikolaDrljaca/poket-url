@@ -2,9 +2,11 @@ package infrastructure.configuration
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.uri
 import io.ktor.server.response.*
+import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
@@ -80,10 +82,23 @@ fun Application.configureStatusPages() {
     val logger = log
     // all error responses use application/json+problem
     install(StatusPages) {
+        exception<BadRequestException> { call, cause ->
+            // Drill to access MissingFieldException
+            val actual = cause.cause?.cause
+            val title = when {
+                actual is MissingFieldException -> "Missing fields: ${actual.missingFields.joinToString { it }}."
+                else -> "Bad request."
+            }
+            val problem = Problem(
+                title = title,
+                statusCode = HttpStatusCode.BadRequest
+            )
+            call.respondProblem(problem)
+        }
+
         exception<Throwable> { call, cause ->
             logger.error("Something went wrong!", cause)
-            val problem = ErrorCode.Unknown.asProblem()
-            call.respondProblem(problem)
+            call.respondErrorCode(ErrorCode.Unknown)
         }
     }
 }

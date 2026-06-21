@@ -12,7 +12,6 @@ import infrastructure.pool.PoolShortCodeProvider
 import infrastructure.pool.launchReplenishLoop
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
-import io.ktor.server.routing.*
 
 suspend fun Application.module() {
     // parse environment

@@ -11,7 +11,4 @@ fun Application.configureHttp() {
         allowMethod(HttpMethod.Post)
         anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
     }
-    install(DefaultHeaders) {
-        header("X-Engine", "Ktor")
-    }
 }
