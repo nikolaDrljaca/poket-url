@@ -17,6 +17,7 @@ suspend fun Application.configureDatabase(
         append("?journal_mode=WAL")
         append("&busy_timeout=5000")
         append("&synchronous=NORMAL")
+        append("&transaction_mode=IMMEDIATE")
         append("&foreign_keys=true")
         append("&cache_size=-32000")
         append("&mmap_size=268435456") // 256MB memory-mapped I/O, reduces syscall overhead
