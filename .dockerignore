@@ -1,0 +1,20 @@
+# git
+.git
+.gitattributes
+.gitignore
+
+# kotlin
+**/.gradle/
+**/.idea_modules/
+**/.kapt/
+**/.kotlin/
+**/.kotlinc/
+**/.idea/*
+
+# rest
+build
+result-poketurl.txt
+perf.md
+README.md
+Dockerfile
+docker-compose.

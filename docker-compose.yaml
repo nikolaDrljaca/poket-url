@@ -12,8 +12,6 @@ services:
       DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
       BASE_PATH: ${BASE_PATH:-}
       RATE_LIMIT: ${RATE_LIMIT:-false}
-      JAVA_TOOL_OPTIONS: >-
-        -XX:MaxRAMPercentage=75.0
 
     # hardening
     security_opt:
@@ -31,10 +29,3 @@ services:
           cpus: '0.5'
           memory: 256m
     restart: on-failure:5
-
-    # health
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
