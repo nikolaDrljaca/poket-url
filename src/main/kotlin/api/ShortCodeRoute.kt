@@ -1,5 +1,6 @@
 package api
 
+import PoketUrlConfiguration
 import application.CreateShortUrlUseCase
 import application.ResolveShortCodeUseCase
 import arrow.core.getOrElse
@@ -18,10 +19,10 @@ import kotlinx.serialization.Serializable
 fun Application.shortCodeRoutes(
     createShortCode: CreateShortUrlUseCase,
     resolveShortCode: ResolveShortCodeUseCase,
-    environment: Environment
+    configuration: PoketUrlConfiguration
 ) {
     val logger = log
-    val basePath = environment.basePath
+    val basePath = configuration.app.basePath
 
     routing {
         get("/r/{code}") {

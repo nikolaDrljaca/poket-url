@@ -1,5 +1,6 @@
 package infrastructure.configuration
 
+import DatabaseConfiguration
 import infrastructure.db.PoketUrlTable
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -9,11 +10,11 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import java.sql.Connection
 
 suspend fun Application.configureDatabase(
-    environment: Environment
+    databaseConfiguration: DatabaseConfiguration
 ) {
     // extract env values
     val urlWithParams = buildString {
-        append(environment.dbUrl)
+        append(databaseConfiguration.url)
         append("?journal_mode=WAL")
         append("&busy_timeout=5000")
         append("&synchronous=NORMAL")

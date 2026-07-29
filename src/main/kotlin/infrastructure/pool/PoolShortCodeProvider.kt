@@ -1,26 +1,24 @@
 package infrastructure.pool
 
+import arrow.core.raise.result
 import domain.ShortCode
 import domain.ShortCodeProvider
-import arrow.core.raise.result
 import infrastructure.db.PoketUrlTable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.slf4j.Logger
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 class PoolShortCodeProvider(
     private val poolSize: Int = POOL_SIZE,
-    private val logger: Logger,
+    private val coroutineScope: CoroutineScope,
     private val provider: ShortCodeProvider
 ) : ShortCodeProvider by provider {
 
@@ -63,28 +61,28 @@ class PoolShortCodeProvider(
         }
     }
 
+    fun launchReplenishLoop() {
+        // interval based pool replenish
+        coroutineScope.launch {
+            while (true) {
+                populate()
+                delay(30.seconds)
+            }
+        }
+        // emergency pool replenish
+        // if pool is below watermark
+        coroutineScope.launch {
+            while (true) {
+                if (watermark()) {
+                    populate()
+                }
+                delay(1.seconds)
+            }
+        }
+    }
+
     companion object {
         const val POOL_SIZE = 10_000
-    }
-}
-
-fun PoolShortCodeProvider.launchReplenishLoop(scope: CoroutineScope) {
-    // interval based pool replenish
-    scope.launch {
-        while (true) {
-            populate()
-            delay(30.seconds)
-        }
-    }
-    // emergency pool replenish
-    // if pool is below watermark
-    scope.launch {
-        while (true) {
-            if (watermark()) {
-                populate()
-            }
-            delay(1.seconds)
-        }
     }
 }
 
