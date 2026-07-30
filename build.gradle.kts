@@ -9,7 +9,7 @@ group = "com.drbrosdev"
 version = "1.0.0-SNAPSHOT"
 
 application {
-    mainClass = "com.drbrosdev.MainKt"
+    mainClass = "MainKt"
 }
 
 kotlin {
