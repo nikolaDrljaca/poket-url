@@ -9,7 +9,7 @@ group = "com.drbrosdev"
 version = "1.0.0-SNAPSHOT"
 
 application {
-    mainClass = "io.ktor.server.cio.EngineMain"
+    mainClass = "com.drbrosdev.MainKt"
 }
 
 kotlin {
@@ -23,9 +23,7 @@ dependencies {
     implementation(ktorLibs.server.core)
     implementation(ktorLibs.server.cors)
     implementation(ktorLibs.server.defaultHeaders)
-    implementation(ktorLibs.server.di)
     implementation(ktorLibs.server.statusPages)
-    implementation(ktorLibs.server.rateLimit)
 
     implementation(libs.arrow.core)
     implementation(libs.arrow.fx.coroutines)

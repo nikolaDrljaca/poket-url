@@ -1,56 +1,50 @@
 import api.actuatorRoutes
 import api.shortCodeRoutes
-import application.CreateShortUrlUseCase
-import application.ResolveShortCodeUseCase
-import domain.DefaultShortCodeProvider
-import infrastructure.cache.LruCache
-import infrastructure.configuration.*
-import infrastructure.db.CachedPoketUrlRepository
-import infrastructure.db.SqlitePoketUrlRepository
 import infrastructure.configuration.configureDatabase
-import infrastructure.pool.PoolShortCodeProvider
-import infrastructure.pool.launchReplenishLoop
+import infrastructure.configuration.configureHttp
+import infrastructure.configuration.configureSerialization
+import infrastructure.configuration.configureStatusPages
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
+import io.ktor.server.config.*
+import io.ktor.server.engine.*
 
-suspend fun Application.module() {
-    // parse environment
-    val env = parseEnvironment()
-    log.info("Loaded environment $env")
-
-    // configure application plugins
-    configureSerialization()
-    configureStatusPages()
-    configureHttp()
-    configureDatabase(environment = env)
-    configureRateLimiter(environment = env)
-
-    // initialize pool
-    val shortCodePool = PoolShortCodeProvider(
-        logger = log,
-        provider = DefaultShortCodeProvider()
-    )
-    shortCodePool.launchReplenishLoop(this)
-
-    // create dependencies
-    val repo = CachedPoketUrlRepository(
-        logger = log,
-        delegate = SqlitePoketUrlRepository(),
-        cache = LruCache()
-    )
-
-    // configure routing
-    shortCodeRoutes(
-        createShortCode = CreateShortUrlUseCase(
-            repository = repo,
-            shortCodeProvider = shortCodePool
-        ),
-        resolveShortCode = ResolveShortCodeUseCase(repo),
-        environment = env
-    )
-    actuatorRoutes()
+fun main() {
+    // extract configuration
+    val config = ApplicationConfig("application.yaml")
+        .getAs<PoketUrlConfiguration>()
+    // configure embedded server
+    embeddedServer(
+        factory = CIO,
+        host = config.server.host,
+        port = config.server.port,
+        module = {
+            val deps = dependencies(config)
+            poketUrlServiceApp(
+                configuration = config,
+                dependencies = deps
+            )
+        }
+    ).start(wait = true)
 }
 
-fun main(args: Array<String>) {
-    EngineMain.main(args)
+suspend fun Application.poketUrlServiceApp(
+    configuration: PoketUrlConfiguration,
+    dependencies: Dependencies
+) {
+    // configure application plugins
+    configureSerialization()
+    configureHttp()
+    configureStatusPages()
+    configureDatabase(databaseConfiguration =  configuration.database)
+    // start pool replenish loop
+    dependencies.shortCodePool.launchReplenishLoop()
+
+    // routes
+    shortCodeRoutes(
+        createShortCode = dependencies.createShortCode,
+        resolveShortCode = dependencies.resolveShortCode,
+        configuration = configuration
+    )
+    actuatorRoutes()
 }
