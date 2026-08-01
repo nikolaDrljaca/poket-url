@@ -24,7 +24,7 @@ suspend fun Application.dependencies(config: PoketUrlConfiguration): Dependencie
     // create dependencies
     val repo = CachedPoketUrlRepository(
         logger = log,
-        delegate = SqlitePoketUrlRepository(),
+        delegate = SqlitePoketUrlRepository(logger = log),
         cache = LruCache()
     )
     // create use cases

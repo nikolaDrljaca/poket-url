@@ -15,20 +15,14 @@ class CachedPoketUrlRepository(
     private val cache: ShortCodeCache
 ) : PoketUrlRepository by delegate {
 
-    override suspend fun save(mapping: PoketUrl) = coroutineScope {
-        launch {
-            delegate.save(mapping)
-        }
+    override suspend fun save(mapping: PoketUrl) {
+        delegate.save(mapping)
         cache[mapping.shortCode] = mapping
     }
 
     override suspend fun findByCode(code: ShortCode): PoketUrl? {
-        val out = result {
-            cache.getOrPut(code) {
-                logger.info("ShortCode ${code.value} cache MISS.")
-                requireNotNull(delegate.findByCode(code))
-            }
-        }
-        return out.getOrNull()
+        cache[code]?.let { return it }
+        logger.info("ShortCode ${code.value} cache MISS.")
+        return delegate.findByCode(code)?.also { cache[code] = it }
     }
 }
