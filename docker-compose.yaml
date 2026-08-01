@@ -11,7 +11,6 @@ services:
     environment:
       DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
       BASE_PATH: ${BASE_PATH:-}
-      RATE_LIMIT: ${RATE_LIMIT:-false}
 
     # hardening
     security_opt:

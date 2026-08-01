@@ -3,6 +3,7 @@ package infrastructure.configuration
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.MissingRequestParameterException
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.uri
 import io.ktor.server.response.*
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.Json
 enum class ErrorCode(val code: String) {
     Unknown("PKT-001"),
     CannotCreateShortCode("PKT-002"),
-    EmptyShortCode("PKT-003"),
+    InvalidShortCode("PKT-006"),
     UnsupportedProtocol("PKT-004"),
     UrlLengthExceeded("PKT-005"),
 }
@@ -32,12 +33,6 @@ fun ErrorCode.asProblem(): Problem = when (this) {
         code = code
     )
 
-    ErrorCode.EmptyShortCode -> Problem(
-        title = "Parameter 'code' is required.",
-        statusCode = HttpStatusCode.BadRequest,
-        code = code
-    )
-
     ErrorCode.UnsupportedProtocol -> Problem(
         title = "Protocol not supported.",
         statusCode = HttpStatusCode.BadRequest,
@@ -46,6 +41,12 @@ fun ErrorCode.asProblem(): Problem = when (this) {
 
     ErrorCode.UrlLengthExceeded -> Problem(
         title = "URL length exceeded.",
+        statusCode = HttpStatusCode.BadRequest,
+        code = code
+    )
+
+    ErrorCode.InvalidShortCode -> Problem(
+        title = "Invalid short code",
         statusCode = HttpStatusCode.BadRequest,
         code = code
     )
@@ -82,6 +83,14 @@ fun Application.configureStatusPages() {
     val logger = log
     // all error responses use application/json+problem
     install(StatusPages) {
+        exception<MissingRequestParameterException> { call, cause ->
+            val problem = Problem(
+                title = "Missing request parameter: ${cause.parameterName}.",
+                statusCode = HttpStatusCode.BadRequest
+            )
+            call.respondProblem(problem)
+        }
+
         exception<BadRequestException> { call, cause ->
             // Drill to access MissingFieldException
             val actual = cause.cause?.cause

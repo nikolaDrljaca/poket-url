@@ -3,7 +3,10 @@ package api
 import PoketUrlConfiguration
 import application.CreateShortUrlUseCase
 import application.ResolveShortCodeUseCase
+import arrow.core.None
+import arrow.core.Some
 import arrow.core.getOrElse
+import arrow.core.toOption
 import domain.OriginalUrl
 import domain.OriginalUrlError
 import domain.ShortCode
@@ -13,6 +16,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.getValue
 import kotlinx.serialization.Serializable
 
 
@@ -26,19 +30,23 @@ fun Application.shortCodeRoutes(
 
     routing {
         get("/r/{code}") {
-            val codeParam = call.parameters["code"] ?: return@get call.respondErrorCode(ErrorCode.EmptyShortCode)
-            val shortCode = ShortCode(codeParam).getOrElse { err ->
-                call.respondErrorCode(ErrorCode.EmptyShortCode)
+            val code: String by call.parameters
+            val shortCode = ShortCode(code).getOrElse { err ->
+                log.error("Invalid ShortCode error: $err during resolution.")
+                call.respondErrorCode(ErrorCode.InvalidShortCode)
                 return@get
             }
-            val result = resolveShortCode.execute(shortCode)
-                ?: return@get call.respondProblem(
+            val originalUrl = resolveShortCode.execute(shortCode)
+            when {
+                originalUrl == null -> call.respondProblem(
                     problem = Problem(
                         title = "Original URL not found for code '${shortCode.value}'.",
                         statusCode = HttpStatusCode.NotFound,
                     )
                 )
-            call.respondRedirect(result.value)
+
+                else -> call.respondRedirect(originalUrl.value)
+            }
         }
 
         post("/shorten") {
