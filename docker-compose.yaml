@@ -2,12 +2,12 @@
 
 services:
   poketurl-service:
-    image: poketurl:2026.6
+    image: poketurl:2026.9
     build: .
     container_name: poketurl-service
     volumes:
       # use bind mount
-      - /opt/poketurl/data:/app/data
+      - /srv/poketurl/data:/app/data
     environment:
       DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
       BASE_PATH: ${BASE_PATH:-}
