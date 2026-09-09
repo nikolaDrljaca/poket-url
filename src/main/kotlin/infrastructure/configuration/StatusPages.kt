@@ -22,7 +22,7 @@ enum class ErrorCode(val code: String) {
 
 fun ErrorCode.asProblem(): Problem = when (this) {
     ErrorCode.Unknown -> Problem(
-        title = "Unknown exception",
+        title = "Unknown exception.",
         statusCode = HttpStatusCode.InternalServerError,
         code = code
     )
@@ -46,7 +46,7 @@ fun ErrorCode.asProblem(): Problem = when (this) {
     )
 
     ErrorCode.InvalidShortCode -> Problem(
-        title = "Invalid short code",
+        title = "Invalid short code.",
         statusCode = HttpStatusCode.BadRequest,
         code = code
     )
@@ -63,16 +63,14 @@ data class Problem(
     val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError,
 
     val code: String? = null,
-    val detail: String? = null
-) {
-    val status = statusCode.value
-}
-
+    val detail: String? = null,
+    val status: Int = statusCode.value
+)
 
 suspend inline fun ApplicationCall.respondProblem(problem: Problem) =
     respondText(
         status = problem.statusCode,
-        text = Json.encodeToString(problem.copy(instance = request.uri)),
+        text = PoketUrlJson.encodeToString(problem.copy(instance = request.uri)),
         contentType = ContentType.Application.ProblemJson
     )
 
