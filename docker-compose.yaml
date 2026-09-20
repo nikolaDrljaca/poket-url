@@ -23,8 +23,8 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 512m
+          memory: 256m
         reservations:
           cpus: '0.5'
-          memory: 256m
+          memory: 96m
     restart: on-failure:5
