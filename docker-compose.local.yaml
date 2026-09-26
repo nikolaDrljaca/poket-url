@@ -1,4 +1,4 @@
-# PROD docker compose script
+# LOCAL docker compose script
 
 services:
   poketurl-service:
@@ -7,7 +7,9 @@ services:
     container_name: poketurl-service
     volumes:
       # use bind mount
-      - /srv/poketurl/data:/app/data
+      - ./app/data:/app/data
+    ports:
+      - 5000:5000
     environment:
       DB_URL: "jdbc:sqlite:/app/data/poketurl-db.sqlite"
       BASE_PATH: ${BASE_PATH:-}
